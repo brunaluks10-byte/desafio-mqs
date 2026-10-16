@@ -128,9 +128,19 @@ def seed_questions(client):
     client.table("mqs_questions").insert(payload).execute()
     return True, f"{len(payload)} perguntas iniciais importadas. Revise as perguntas inativas antes da campanha."
 
+def render_hero(title):
+    banner_path = os.path.join(os.path.dirname(__file__), "tatu_mqs_banner.png")
+    if os.path.exists(banner_path):
+        st.image(banner_path, use_container_width=True)
+    st.markdown(
+        f'<div class="mqs-hero"><h1>{title}</h1>'
+        '<p>Máquina Solo · Conhecimento, colaboração e desafio</p></div>',
+        unsafe_allow_html=True,
+    )
+
 client = db()
 if client is None:
-    st.markdown('<div class="mqs-hero"><h1>DESAFIO MQS</h1><p>Máquina Solo · Conhecimento, colaboração e desafio</p></div>', unsafe_allow_html=True)
+    render_hero("DESAFIO MQS")
     st.error("A conexão com o banco ainda não foi configurada.")
     st.markdown("**Próxima configuração:** crie o projeto Supabase, execute o arquivo `supabase_schema.sql` e configure `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `MQS_ADMIN_PASSWORD` nos Secrets do Streamlit.")
     st.stop()
@@ -142,7 +152,7 @@ except Exception as e:
     st.code(str(e))
     st.stop()
 
-st.markdown(f'<div class="mqs-hero"><h1>{settings.get("title") or "DESAFIO MQS"}</h1><p>Máquina Solo · Conhecimento, colaboração e desafio</p></div>', unsafe_allow_html=True)
+render_hero(settings.get("title") or "DESAFIO MQS")
 st.write("")
 pages = ["Jogar", "Ranking", "Organização"]
 page = st.radio("Menu", pages, horizontal=True, label_visibility="collapsed")
