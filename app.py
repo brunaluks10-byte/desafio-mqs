@@ -15,10 +15,12 @@ st.markdown("""
 <style>
 :root { --mqs-yellow: #FFC000; --mqs-gray: #7F7F7F; --mqs-ink: #202326; }
 .stApp, [data-testid="stAppViewContainer"] { background: #f5f6f8 !important; color: #202326 !important; }
-.block-container { max-width: 1120px; padding-top: 1.5rem; padding-bottom: 3rem; }
-.mqs-hero { background: #202326; color: #ffffff; padding: 2rem; border-radius: 22px; border-left: 10px solid #FFC000; margin-bottom: 1.2rem; }
-.mqs-hero h1 { color: #FFC000 !important; margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); }
-.mqs-hero p { color: #f3f4f6 !important; margin-bottom: 0; }
+.block-container { max-width: 1120px; padding-top: .35rem !important; padding-bottom: 2.5rem; }
+header[data-testid="stHeader"] { background: transparent !important; height: 2.4rem !important; }
+[data-testid="stToolbar"] { right: 1rem; }
+.mqs-hero { background: #202326; color: #ffffff; padding: 1.25rem 1.6rem; border-radius: 0 0 18px 18px; border-left: 8px solid #FFC000; margin: -.15rem 0 1.1rem; box-shadow: 0 8px 22px rgba(32,35,38,.10); }
+.stApp .mqs-hero h1 { color: #FFC000 !important; margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.08; }
+.mqs-hero p { color: #f3f4f6 !important; margin: .35rem 0 0; font-size: 1rem; }\n[data-testid="stImage"] { margin-bottom: 0 !important; }
 /* Legibilidade geral: títulos, rótulos, textos e abas */
 .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp p,
 .stApp label, .stApp [data-testid="stWidgetLabel"],
@@ -49,8 +51,8 @@ st.markdown("""
 .stApp div.stButton > button:not([kind="primary"]) { background: #202326; color: #ffffff; border: 1px solid #202326; }
 .stApp [data-testid="stAlert"] p { color: inherit !important; }
 @media (max-width: 640px) {
-  .block-container { padding-left: 1rem; padding-right: 1rem; padding-top: 1rem; }
-  .mqs-hero { padding: 1.3rem; border-radius: 15px; }
+  .block-container { padding-left: 1rem; padding-right: 1rem; padding-top: .25rem !important; }
+  .mqs-hero { padding: 1.1rem; border-radius: 0 0 15px 15px; }
 }
 </style>
 """, unsafe_allow_html=True)
