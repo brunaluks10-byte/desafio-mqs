@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import html
 import json
@@ -63,17 +62,16 @@ st.markdown(
 .mqs-brand-label, .mqs-eyebrow { color:var(--mqs-yellow); font-size:.72rem; font-weight:750; letter-spacing:.13em; text-transform:uppercase; }
 .mqs-brand h1 { margin:0; font-size:clamp(1.55rem,3vw,2.05rem); line-height:1.08; }
 .mqs-header-note { color:var(--mqs-muted); font-size:.84rem; text-align:right; }
-.mqs-hero { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; padding:1.25rem 1.45rem; margin:.8rem 0 1.35rem; background:linear-gradient(110deg,#202428,#171A1D); border:1px solid var(--mqs-border); border-left:4px solid var(--mqs-yellow); border-radius:15px; }
-.mqs-hero h2 { margin:.24rem 0 .35rem; font-size:clamp(1.35rem,2.6vw,1.9rem); }
-.mqs-hero p { margin:0; max-width:700px; color:#D4D8DC !important; line-height:1.55; }
+.stApp [data-testid="stVerticalBlockBorderWrapper"]:has(.mqs-hero-copy) { background:linear-gradient(110deg,#202428,#171A1D) !important; border:1px solid var(--mqs-border) !important; border-left:4px solid var(--mqs-yellow) !important; border-radius:15px !important; padding:1rem 1.2rem !important; margin:.8rem 0 1.35rem; }
+.mqs-hero-copy h2 { margin:.24rem 0 .35rem; font-size:clamp(1.35rem,2.6vw,1.9rem); }
+.mqs-hero-copy p { margin:0; max-width:700px; color:#D4D8DC !important; line-height:1.55; }
 .mqs-hero-aside { flex:0 0 auto; padding:.7rem .85rem; border-radius:11px; border:1px solid #444A50; background:#191C1F; color:var(--mqs-muted); font-size:.78rem; line-height:1.5; }
 .mqs-hero-aside strong { display:block; color:var(--mqs-yellow); font-size:.95rem; letter-spacing:.08em; }
-.mqs-mascot { display:block; width:clamp(105px,17vw,185px); max-height:190px; object-fit:contain; flex:0 0 auto; }
 .mqs-card-title { margin:.1rem 0 .3rem; font-size:1.06rem; font-weight:750; color:var(--mqs-text); }
 .mqs-card-copy { min-height:2.55rem; color:var(--mqs-muted); font-size:.9rem; line-height:1.45; }
 .mqs-question { padding:1.15rem 1.25rem; margin:.75rem 0 1rem; background:var(--mqs-panel); border:1px solid var(--mqs-border); border-radius:14px; font-size:clamp(1.15rem,2.2vw,1.65rem); line-height:1.4; font-weight:700; }
 .mqs-kicker { color:var(--mqs-yellow); font-weight:750; font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; }
-.mqs-tip { padding:.85rem 1rem; border-left:3px solid var(--mqs-yellow); border-radius:0 10px 10px 0; background:#1B1E21; color:#D5D9DD; line-height:1.5; }
+.mqs-tip-copy { padding:.55rem .7rem; border-left:3px solid var(--mqs-yellow); border-radius:0 10px 10px 0; background:#1B1E21; color:#D5D9DD; line-height:1.5; }
 .mqs-status { display:inline-flex; align-items:center; gap:.5rem; padding:.38rem .7rem; border:1px solid #355441; border-radius:999px; background:#15221A; color:#B9E4C5; font-size:.82rem; font-weight:650; }
 [data-testid="stMetric"] { background:var(--mqs-panel); border:1px solid var(--mqs-border); border-radius:12px; padding:.85rem 1rem; }
 [data-testid="stMetricLabel"] { color:var(--mqs-muted) !important; }
@@ -94,11 +92,12 @@ st.markdown(
   .block-container { padding-left:1rem; padding-right:1rem; padding-top:.35rem !important; }
   .mqs-header { align-items:flex-start; }
   .mqs-header-note { max-width:8.5rem; }
-  .mqs-hero { align-items:flex-start; padding:1rem; }
   .mqs-hero-aside { display:none; }
-  .mqs-mascot { width:82px; max-height:115px; }
   .mqs-card-copy { min-height:0; }
   [data-testid="stMetric"] { padding:.7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
 </style>
 """,
@@ -135,8 +134,11 @@ def admin_ok():
     return bool(st.session_state.get("admin_ok"))
 
 
-def fetch_settings(client):
-    result = client.table("mqs_settings").select("*").eq("id", 1).limit(1).execute()
+@st.cache_data(ttl=30, show_spinner=False)
+def fetch_settings(_client):
+    result = _client.table("mqs_settings").select(
+        "id,title,campaign_open,start_date,end_date,questions_per_game"
+    ).eq("id", 1).limit(1).execute()
     if result.data:
         return result.data[0]
     return {
@@ -145,8 +147,11 @@ def fetch_settings(client):
     }
 
 
-def fetch_questions(client, active_only=False):
-    query = client.table("mqs_questions").select("*").order("category").order("id")
+@st.cache_data(ttl=30, show_spinner=False)
+def fetch_questions(_client, active_only=False):
+    query = _client.table("mqs_questions").select(
+        "id,category,prompt,question_type,a,b,c,d,correct,explanation,active"
+    ).order("category").order("id")
     if active_only:
         query = query.eq("active", True).neq("correct", "")
     return query.execute().data or []
@@ -204,14 +209,13 @@ def select_questions(questions, count):
     return selected
 
 
-def fetch_leaderboard(client):
-    rows = client.table("mqs_attempts").select(
+@st.cache_data(ttl=15, show_spinner=False)
+def fetch_leaderboard(_client):
+    rows = _client.table("mqs_attempts").select(
         "id,name,sector,score,total,percent,created_at"
-    ).execute().data or []
-    rows.sort(key=lambda row: (
-        -float(row.get("percent") or 0), -int(row.get("score") or 0),
-        str(row.get("created_at") or ""), normalize(row.get("name")),
-    ))
+    ).order("percent", desc=True).order("score", desc=True).order(
+        "created_at"
+    ).order("name").execute().data or []
     rank = 0
     previous_result = None
     for index, row in enumerate(rows, 1):
@@ -255,6 +259,7 @@ def save_attempt_once(client, payload):
         if existing:
             return True, "already_saved"
         attempts.insert(payload).execute()
+        fetch_leaderboard.clear()
         return True, "saved"
     except Exception:
         # A concurrent rerun can win the unique-key race after the first lookup.
@@ -269,11 +274,21 @@ def save_attempt_once(client, payload):
 
 def original_mascot_path():
     candidates = (
-        Path(__file__).parent / "assets" / "tatu_original.png",
         Path(__file__).parent / "assets" / "tatu_original.webp",
+        Path(__file__).parent / "assets" / "tatu_original.png",
         Path(__file__).parent / "tatu_original.png",
     )
     return next((path for path in candidates if path.is_file()), None)
+
+
+def mascot_variant_path(variant):
+    filenames = {
+        "heart": "tatu_heart.webp",
+        "message": "tatu_message.webp",
+    }
+    filename = filenames.get(variant)
+    path = Path(__file__).parent / "assets" / filename if filename else None
+    return path if path and path.is_file() else original_mascot_path()
 
 
 def render_header(title):
@@ -289,23 +304,39 @@ def render_header(title):
 
 def render_hero():
     mascot_path = original_mascot_path()
-    mascot = ""
-    aside = (
-        '<div class="mqs-hero-aside"><strong>Escolha seu ritmo</strong>'
-        '5, 10, 15 ou todas as perguntas.</div>'
-    )
-    if mascot_path:
-        mime = "image/webp" if mascot_path.suffix.lower() == ".webp" else "image/png"
-        encoded = base64.b64encode(mascot_path.read_bytes()).decode("ascii")
-        mascot = f'<img class="mqs-mascot" src="data:{mime};base64,{encoded}" alt="Tatu original da Máquina Solo">'
-        aside = mascot
-    st.markdown(
-        '<div class="mqs-hero"><div><div class="mqs-eyebrow">Plataforma de aprendizado e colaboração</div>'
-        '<h2>História, conhecimento técnico e valores que movem a Máquina Solo.</h2>'
-        '<p>Teste seus conhecimentos, acumule pontos e descubra sua posição no ranking.</p></div>'
-        f'{aside}</div>',
-        unsafe_allow_html=True,
-    )
+    with st.container(border=True):
+        columns = st.columns([5, 1], gap="medium")
+        with columns[0]:
+            st.markdown(
+                '<div class="mqs-hero-copy"><div class="mqs-eyebrow">Plataforma de aprendizado e colaboração</div>'
+                '<h2>História, conhecimento técnico e valores que movem a Máquina Solo.</h2>'
+                '<p>Teste seus conhecimentos, acumule pontos e descubra sua posição no ranking.</p></div>',
+                unsafe_allow_html=True,
+            )
+        with columns[1]:
+            if mascot_path:
+                st.image(str(mascot_path), width=150, caption="Tatu · Máquina Solo")
+            else:
+                st.markdown(
+                    '<div class="mqs-hero-aside"><strong>Escolha seu ritmo</strong>'
+                    '5, 10, 15 ou todas as perguntas.</div>',
+                    unsafe_allow_html=True,
+                )
+
+
+def render_tatu_tip(message, title="Dica do Tatu", variant="message"):
+    mascot_path = mascot_variant_path(variant)
+    with st.container(border=True):
+        columns = st.columns([1, 9], gap="small")
+        with columns[0]:
+            if mascot_path:
+                st.image(str(mascot_path), width=58, caption="Tatu")
+        with columns[1]:
+            st.markdown(
+                f'<div class="mqs-tip-copy"><strong>{html.escape(title)}</strong> · '
+                f'{html.escape(str(message))}</div>',
+                unsafe_allow_html=True,
+            )
 
 
 def render_category_cards(selected_category, counts):
@@ -424,10 +455,9 @@ def render_home(client, settings, is_open, status_message):
         }
         st.rerun()
 
-    st.markdown(
-        '<div class="mqs-tip"><strong>Dica do Tatu</strong> · Preste atenção aos detalhes: '
-        'algumas perguntas testam conhecimento técnico; outras exploram o jeito MQS de trabalhar.</div>',
-        unsafe_allow_html=True,
+    render_tatu_tip(
+        "Preste atenção aos detalhes: algumas perguntas testam conhecimento técnico; outras exploram o jeito MQS de trabalhar.",
+        variant="heart",
     )
 
 
@@ -503,7 +533,10 @@ def render_quiz(client, quiz):
                 st.session_state.quiz = quiz
                 st.rerun()
 
-        st.markdown('<div class="mqs-tip">Pense com calma. Cada resposta é uma oportunidade de aprender.</div>', unsafe_allow_html=True)
+        render_tatu_tip(
+            "Pense com calma. Cada resposta é uma oportunidade de aprender.",
+            title="Vamos lá",
+        )
         return
 
     percent = round(score / total * 100, 1) if total else 0
@@ -521,7 +554,7 @@ def render_quiz(client, quiz):
         message = "Boa participação. Continue explorando os conhecimentos MQS."
     else:
         message = "Obrigado por participar. Cada rodada é uma oportunidade de aprender."
-    st.markdown(f'<div class="mqs-tip">{html.escape(message)}</div>', unsafe_allow_html=True)
+    render_tatu_tip(message, title="Resultado", variant="heart")
 
     if not quiz.get("saved") and not quiz.get("save_attempted"):
         payload = {
@@ -580,7 +613,7 @@ def render_leaderboard(client):
     st.subheader("Ranking do Desafio MQS")
     st.caption("Classificação por aproveitamento e, em seguida, pontuação. Quem empata nos dois critérios compartilha a posição.")
     if st.button("Atualizar ranking", key="refresh_ranking"):
-        st.rerun()
+        fetch_leaderboard.clear()
     try:
         with st.spinner("Carregando a classificação..."):
             board = fetch_leaderboard(client)
@@ -658,6 +691,7 @@ def render_campaign_tab(client, settings):
                     "end_date": end_date.isoformat(),
                     "questions_per_game": int(per_game),
                 }).execute()
+                fetch_settings.clear()
                 st.success("Configuração salva.")
                 st.rerun()
             except Exception:
@@ -691,6 +725,7 @@ def render_questions_tab(client):
                         "active": question["active"],
                     } for question in items]
                     client.table("mqs_questions").insert(payload).execute()
+                    fetch_questions.clear()
                     st.success(f"{len(payload)} perguntas importadas. Revise as questões pendentes antes de abrir a campanha.")
                     st.rerun()
             except Exception:
@@ -733,6 +768,7 @@ def render_questions_tab(client):
                         "a": a, "b": b, "c": c, "d": d,
                         "correct": correct, "explanation": explanation, "active": active,
                     }).eq("id", selected_id).execute()
+                    fetch_questions.clear()
                     st.success("Pergunta atualizada.")
                     st.rerun()
                 except Exception:
@@ -744,6 +780,7 @@ def render_questions_tab(client):
             if st.button("Excluir pergunta selecionada", disabled=not confirm_question_delete, key=f"delete_question_{selected_id}"):
                 try:
                     client.table("mqs_questions").delete().eq("id", selected_id).execute()
+                    fetch_questions.clear()
                     st.success("Pergunta excluída.")
                     st.rerun()
                 except Exception:
@@ -776,6 +813,7 @@ def render_questions_tab(client):
                     "a": new_a, "b": new_b, "c": new_c, "d": new_d,
                     "correct": new_correct, "explanation": new_explanation, "active": new_active,
                 }).execute()
+                fetch_questions.clear()
                 st.success("Pergunta adicionada.")
                 st.rerun()
             except Exception:
@@ -815,6 +853,7 @@ def render_results_tab(client):
         if st.button("Excluir participação selecionada", disabled=not confirm_attempt_delete):
             try:
                 client.table("mqs_attempts").delete().eq("id", selected_attempt["id"]).execute()
+                fetch_leaderboard.clear()
                 st.success("Participação excluída.")
                 st.rerun()
             except Exception:

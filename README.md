@@ -8,6 +8,7 @@ Aplicativo corporativo de treinamento e engajamento construído com Streamlit e 
 - `requirements.txt`: dependências do Streamlit e do cliente Supabase.
 - `supabase_schema.sql`: esquema existente de campanha, perguntas e participações.
 - `questions_initial.json`: banco inicial de 48 perguntas, incluindo questões inativas para revisão.
+- `assets/`: stickers do Tatu enviados para o projeto, preservados em WebP com transparência.
 - `.streamlit/secrets.toml.example`: modelo das configurações locais, sem credenciais reais.
 
 ## Configuração
@@ -26,9 +27,11 @@ O banco inicial tem questões ativas e questões que precisam de revisão. Rodad
 
 O esquema atual limita a uma participação por combinação de nome e setor por meio de `participant_key`. Essa regra foi preservada e também evita inserir uma conclusão duas vezes em reruns do Streamlit.
 
-## Tatu original
+Leituras de campanha e perguntas usam cache de 30 segundos; o ranking, de 15 segundos. As gravações administrativas, novas participações e o botão de atualização invalidam os caches relevantes. O ranking é ordenado no Supabase antes de chegar à interface.
 
-O arquivo de referência `Desafio_MQS_Editavel_Ranking.html` e a imagem original do Tatu não estão presentes neste repositório. O app deixou de exibir o banner legado `tatu_mqs_banner.png` e não substitui o personagem por outra ilustração. Para concluir a integração do mascote, disponibilize a imagem oficial do Tatu da Máquina Solo (camisa branca e tênis amarelos) como `assets/tatu_original.png`.
+## Mascote Tatu
+
+O app usa `assets/tatu_original.webp` no destaque principal e `assets/tatu_heart.webp` e `assets/tatu_message.webp` nas dicas. As três imagens vieram dos stickers fornecidos para este projeto; o formato WebP e a transparência foram preservados. O banner legado `tatu_mqs_banner.png` não é exibido.
 
 ## Administração e segurança
 
